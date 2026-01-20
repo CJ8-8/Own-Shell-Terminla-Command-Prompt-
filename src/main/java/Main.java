@@ -2,6 +2,8 @@ import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.completer.StringsCompleter;
 import org.jline.terminal.TerminalBuilder;
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.UserInterruptException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,12 +37,25 @@ public class Main {
         String prompt = "$ ";
 
         while (true) {
-            String line = lineReader.readLine(prompt);
-
-            if (line != null && !line.isEmpty()) {
-                var command = parse(line);
-                run(command);
+            String line;
+            try {
+                line = lineReader.readLine(prompt);
+            } catch (EndOfFileException e) {
+                break; // Ctrl+D
+            } catch (UserInterruptException e) {
+                continue; // Ctrl+C
             }
+
+            if (line == null) {
+                break;
+            }
+
+            if (line.isBlank()) {
+                continue;
+            }
+
+            var command = parse(line);
+            run(command);
         }
     }
 
