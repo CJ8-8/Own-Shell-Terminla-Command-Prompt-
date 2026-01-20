@@ -326,7 +326,7 @@ public class Main {
                 if (!after.equals(before)) {
                     buf.setLength(0);
                     buf.append(after);
-                    System.out.print("\r" + prompt + after);
+                    System.out.print("\r\033[K" + prompt + after);
                     System.out.flush();
                 }
                 continue;
