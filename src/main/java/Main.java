@@ -1,11 +1,42 @@
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.io.File;
 import java.util.Scanner;
 
 public class Main {
+    private static List<String> tokenize(String input) {
+        List<String> tokens = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        boolean inSingleQuotes = false;
+
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+
+            if (c == '\'') {
+                inSingleQuotes = !inSingleQuotes;
+                continue; // don't include the quote char
+            }
+
+            if (!inSingleQuotes && Character.isWhitespace(c)) {
+                if (current.length() > 0) {
+                    tokens.add(current.toString());
+                    current.setLength(0);
+                }
+                continue; // collapse whitespace outside quotes
+            }
+
+            // inside single quotes: keep everything literal (including whitespace)
+            current.append(c);
+        }
+
+        if (current.length() > 0) {
+            tokens.add(current.toString());
+        }
+
+        return tokens;
+    }
+
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
 
@@ -26,21 +57,27 @@ public class Main {
             if (command.equals("exit") || command.equals("exit 0")) {
                 System.exit(0);
             }
-            if (command.equals("echo")) {
-                System.out.println();
+
+            List<String> tokens = tokenize(command);
+            if (tokens.isEmpty()) {
                 continue;
             }
-            if (command.startsWith("echo ")) {
-                System.out.println(command.substring(5));
+            String program = tokens.get(0);
+
+            if (program.equals("echo")) {
+                if (tokens.size() == 1) {
+                    System.out.println();
+                } else {
+                    System.out.println(String.join(" ", tokens.subList(1, tokens.size())));
+                }
                 continue;
             }
-            if (command.equals("type") || command.startsWith("type ")) {
-                String[] parts = command.split("\\s+", 2);
-                if (parts.length < 2 || parts[1].isBlank()) {
+            if (program.equals("type")) {
+                if (tokens.size() < 2) {
                     System.out.println("type: not found");
                     continue;
                 }
-                String target = parts[1].trim();
+                String target = tokens.get(1);
 
                 // 1) Builtins
                 if (target.equals("echo") || target.equals("exit") || target.equals("type")) {
@@ -70,12 +107,8 @@ public class Main {
                 }
                 continue;
             }
-            if (command.isEmpty()) {
-                continue;
-            }
-            String[] tokens = command.split("\\s+");
-            String program = tokens[0];
-            List<String> argsList = new ArrayList<>(Arrays.asList(tokens));
+
+            List<String> argsList = new ArrayList<>(tokens);
 
             // Find executable in PATH
             String pathEnv = System.getenv("PATH");
