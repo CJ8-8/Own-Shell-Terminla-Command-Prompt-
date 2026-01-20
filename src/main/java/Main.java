@@ -35,6 +35,10 @@ public class Main {
             if (ch == '\t') {
                 String before = buf.toString();
 
+                if (before.isEmpty()) {
+                    continue;
+                }
+
                 // only complete the first word (no spaces yet)
                 boolean hasSpace = false;
                 for (int i = 0; i < before.length(); i++) {
@@ -44,11 +48,16 @@ public class Main {
                     }
                 }
 
-                if (!hasSpace) {
+                if (!hasSpace && !before.endsWith(" ")) {
                     String after = before;
+
                     if ("echo".startsWith(before)) {
                         after = "echo ";
                     } else if ("exit".startsWith(before)) {
+                        after = "exit ";
+                    } else if (before.equals("echo")) {
+                        after = "echo ";
+                    } else if (before.equals("exit")) {
                         after = "exit ";
                     }
 
