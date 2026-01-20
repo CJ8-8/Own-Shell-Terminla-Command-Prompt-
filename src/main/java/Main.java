@@ -69,12 +69,19 @@ public class Main {
     }
 
     private static String autocomplete(String buffer) {
-        String trimmed = buffer.trim();
-        if (trimmed.isEmpty()) return buffer;
-        if ("echo".startsWith(trimmed)) {
+        if (buffer.isEmpty()) return buffer;
+
+        // only autocomplete the command name (first token)
+        for (int i = 0; i < buffer.length(); i++) {
+            if (Character.isWhitespace(buffer.charAt(i))) {
+                return buffer;
+            }
+        }
+
+        if ("echo".startsWith(buffer)) {
             return "echo ";
         }
-        if ("exit".startsWith(trimmed)) {
+        if ("exit".startsWith(buffer)) {
             return "exit ";
         }
         return buffer;
