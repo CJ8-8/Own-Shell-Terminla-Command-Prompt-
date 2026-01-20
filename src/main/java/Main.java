@@ -67,6 +67,20 @@ public class Main {
                 continue;
             }
 
+            // Some environments expand TAB into spaces. If a space arrives right after a
+            // partial builtin, treat it like TAB completion and don't print the space.
+            if (ch == ' ') {
+                String before = buf.toString();
+                String completed = builtinCompletion(before);
+                if (completed != null && !completed.equals(before)) {
+                    String suffix = completed.substring(before.length());
+                    System.out.print(suffix);
+                    System.out.flush();
+                    buf.append(suffix);
+                    continue;
+                }
+            }
+
             // ENTER: run command
             if (ch == '\n') {
                 System.out.print("\n");
