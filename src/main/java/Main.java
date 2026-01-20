@@ -98,10 +98,12 @@ public class Main {
             }
 
             // Replace argv[0] with resolved absolute path
-            argsList.set(0, resolvedPath);
+            File execFile = new File(resolvedPath);
+            File execDir = execFile.getParentFile();
 
             ProcessBuilder pb = new ProcessBuilder(argsList);
             pb.inheritIO();
+            pb.directory(execDir);
 
             try {
                 Process p = pb.start();
