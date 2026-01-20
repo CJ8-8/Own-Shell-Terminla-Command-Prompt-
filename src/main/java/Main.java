@@ -1,3 +1,10 @@
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.UserInterruptException;
+import org.jline.reader.impl.DefaultParser;
+import org.jline.reader.impl.completer.StringsCompleter;
+import org.jline.terminal.TerminalBuilder;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -301,54 +308,34 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        String prompt = "$ ";
-        StringBuilder buf = new StringBuilder();
+        var terminal = TerminalBuilder.builder().system(true).build();
 
-        System.out.print(prompt);
-        System.out.flush();
+        var parser = new DefaultParser();
+        parser.setEscapeChars(new char[0]);
+
+        var completer = new StringsCompleter("echo", "exit");
+
+        LineReader reader = LineReaderBuilder.builder()
+                .terminal(terminal)
+                .completer(completer)
+                .parser(parser)
+                .build();
 
         while (true) {
-            int ch = System.in.read();
-            if (ch == -1) {
+            String line;
+            try {
+                line = reader.readLine("$ ");
+            } catch (EndOfFileException e) {
+                break; // Ctrl+D
+            } catch (UserInterruptException e) {
+                continue; // Ctrl+C
+            }
+
+            if (line == null) {
                 break;
             }
 
-            // Enter
-            if (ch == '\n') {
-                System.out.print("\n");
-                System.out.flush();
-
-                runCommand(buf.toString());
-                buf.setLength(0);
-
-                System.out.print(prompt);
-                System.out.flush();
-                continue;
-            }
-
-            // Tab
-            if (ch == '\t') {
-                String before = buf.toString();
-                String after = autocomplete(before);
-                if (!after.equals(before)) {
-                    String suffix = after.substring(before.length());
-                    buf.setLength(0);
-                    buf.append(after);
-                    System.out.print(suffix);
-                    System.out.flush();
-                }
-                continue;
-            }
-
-            // Ignore carriage returns
-            if (ch == '\r') {
-                continue;
-            }
-
-            // Normal character
-            buf.append((char) ch);
-            System.out.print((char) ch);
-            System.out.flush();
+            runCommand(line);
         }
     }
 }
