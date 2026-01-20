@@ -14,6 +14,22 @@ public class Main {
     private static final String PATH = "PATH";
     private static Path pwd = Paths.get(System.getProperty("user.dir"));
 
+    private static String builtinCompletion(String before) {
+        if (before == null) return null;
+        if (before.isEmpty()) return null;
+
+        // only complete first word (no whitespace)
+        for (int i = 0; i < before.length(); i++) {
+            if (Character.isWhitespace(before.charAt(i))) {
+                return null;
+            }
+        }
+
+        if ("echo".startsWith(before)) return "echo ";
+        if ("exit".startsWith(before)) return "exit ";
+        return null;
+    }
+
     public static void main(String[] args) throws Exception {
         final String prompt = "$ ";
         StringBuilder buf = new StringBuilder();
@@ -34,40 +50,13 @@ public class Main {
             // TAB completion for builtins echo/exit
             if (ch == '\t') {
                 String before = buf.toString();
-
-                if (before.isEmpty()) {
-                    continue;
-                }
-
-                // only complete the first word (no spaces yet)
-                boolean hasSpace = false;
-                for (int i = 0; i < before.length(); i++) {
-                    if (Character.isWhitespace(before.charAt(i))) {
-                        hasSpace = true;
-                        break;
-                    }
-                }
-
-                if (!hasSpace && !before.endsWith(" ")) {
-                    String after = before;
-
-                    if ("echo".startsWith(before)) {
-                        after = "echo ";
-                    } else if ("exit".startsWith(before)) {
-                        after = "exit ";
-                    } else if (before.equals("echo")) {
-                        after = "echo ";
-                    } else if (before.equals("exit")) {
-                        after = "exit ";
-                    }
-
-                    if (!after.equals(before)) {
-                        String suffix = after.substring(before.length());
-                        buf.setLength(0);
-                        buf.append(after);
-                        System.out.print(suffix);
-                        System.out.flush();
-                    }
+                String after = builtinCompletion(before);
+                if (after != null && !after.equals(before)) {
+                    // print full completed text (not suffix)
+                    System.out.print("\r" + prompt + after);
+                    System.out.flush();
+                    buf.setLength(0);
+                    buf.append(after);
                 }
                 continue;
             }
@@ -92,6 +81,19 @@ public class Main {
                 System.out.print(prompt);
                 System.out.flush();
                 continue;
+            }
+
+            // Treat a run of spaces as a possible TAB expansion in some environments
+            if (ch == ' ') {
+                String before = buf.toString();
+                String after = builtinCompletion(before);
+                if (after != null && !after.equals(before)) {
+                    System.out.print("\r" + prompt + after);
+                    System.out.flush();
+                    buf.setLength(0);
+                    buf.append(after);
+                    continue;
+                }
             }
 
             // normal character
