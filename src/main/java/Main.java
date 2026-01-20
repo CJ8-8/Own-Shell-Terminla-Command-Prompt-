@@ -9,16 +9,22 @@ public class Main {
         List<String> tokens = new ArrayList<>();
         StringBuilder current = new StringBuilder();
         boolean inSingleQuotes = false;
+        boolean inDoubleQuotes = false;
 
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
 
-            if (c == '\'') {
+            if (c == '\'' && !inDoubleQuotes) {
                 inSingleQuotes = !inSingleQuotes;
                 continue; // don't include the quote char
             }
 
-            if (!inSingleQuotes && Character.isWhitespace(c)) {
+            if (c == '"' && !inSingleQuotes) {
+                inDoubleQuotes = !inDoubleQuotes;
+                continue; // don't include the quote char
+            }
+
+            if (!inSingleQuotes && !inDoubleQuotes && Character.isWhitespace(c)) {
                 if (current.length() > 0) {
                     tokens.add(current.toString());
                     current.setLength(0);
@@ -26,7 +32,7 @@ public class Main {
                 continue; // collapse whitespace outside quotes
             }
 
-            // inside single quotes: keep everything literal (including whitespace)
+            // inside quotes: keep everything literal (including whitespace)
             current.append(c);
         }
 
