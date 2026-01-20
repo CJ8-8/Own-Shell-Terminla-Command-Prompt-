@@ -14,19 +14,25 @@ public class Main {
     private static final String PATH = "PATH";
     private static Path pwd = Paths.get(System.getProperty("user.dir"));
 
+    // Returns the completed builtin (with trailing space) or null if no match.
     private static String builtinCompletion(String before) {
-        if (before == null) return null;
-        if (before.isEmpty()) return null;
+        if (before == null || before.isEmpty()) {
+            return null;
+        }
 
-        // only complete first word (no whitespace)
+        // Only complete the first word (no whitespace allowed).
         for (int i = 0; i < before.length(); i++) {
             if (Character.isWhitespace(before.charAt(i))) {
                 return null;
             }
         }
 
-        if ("echo".startsWith(before)) return "echo ";
-        if ("exit".startsWith(before)) return "exit ";
+        if ("echo".startsWith(before)) {
+            return "echo ";
+        }
+        if ("exit".startsWith(before)) {
+            return "exit ";
+        }
         return null;
     }
 
@@ -47,16 +53,16 @@ public class Main {
                 continue;
             }
 
-            // TAB completion for builtins echo/exit
+            // TAB completion for builtins (echo/exit).
             if (ch == '\t') {
                 String before = buf.toString();
-                String after = builtinCompletion(before);
-                if (after != null && !after.equals(before)) {
-                    // print full completed text (not suffix)
-                    System.out.print("\r" + prompt + after);
+                String completed = builtinCompletion(before);
+                if (completed != null && !completed.equals(before)) {
+                    // Rewrite the current line: prompt + completed builtin + space.
+                    System.out.print("\r" + prompt + completed);
                     System.out.flush();
                     buf.setLength(0);
-                    buf.append(after);
+                    buf.append(completed);
                 }
                 continue;
             }
@@ -83,20 +89,7 @@ public class Main {
                 continue;
             }
 
-            // Treat a run of spaces as a possible TAB expansion in some environments
-            if (ch == ' ') {
-                String before = buf.toString();
-                String after = builtinCompletion(before);
-                if (after != null && !after.equals(before)) {
-                    System.out.print("\r" + prompt + after);
-                    System.out.flush();
-                    buf.setLength(0);
-                    buf.append(after);
-                    continue;
-                }
-            }
-
-            // normal character
+            // Normal character: append to buffer and echo it.
             buf.append((char) ch);
             System.out.print((char) ch);
             System.out.flush();
