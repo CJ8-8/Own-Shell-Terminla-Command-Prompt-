@@ -8,13 +8,13 @@ public class Main {
 
         System.out.println(command + ": command not found");
 
-        if (!command.isEmpty()) {
+        // if (!command.isEmpty()) {
             while (true) {
                 System.out.print("$ ");
                 String command = sc.nextLine();
                 System.out.println(command + ": command not found");
             }
-        }
+        // }
         main(null);
     }
 }
