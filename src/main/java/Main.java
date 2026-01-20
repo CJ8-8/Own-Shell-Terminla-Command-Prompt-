@@ -161,6 +161,8 @@ public class Main {
             }
 
             // Replace argv[0] with resolved absolute path
+            argsList.set(0, resolvedPath);
+
             File execFile = new File(resolvedPath);
             File execDir = execFile.getParentFile();
 
