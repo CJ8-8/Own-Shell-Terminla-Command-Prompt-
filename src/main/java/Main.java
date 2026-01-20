@@ -3,6 +3,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.io.File;
 import java.util.Scanner;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 
 public class Main {
     private static List<String> tokenize(String input) {
@@ -94,46 +96,98 @@ public class Main {
             }
             String program = tokens.get(0);
 
+            // Handle stdout redirection: > file  OR  1> file
+            String redirectOutFile = null;
+            for (int i = 0; i < tokens.size(); i++) {
+                String t = tokens.get(i);
+                if (t.equals(">") || t.equals("1>")) {
+                    if (i + 1 < tokens.size()) {
+                        redirectOutFile = tokens.get(i + 1);
+                        // remove operator and filename
+                        tokens.remove(i + 1);
+                        tokens.remove(i);
+                    }
+                    break;
+                }
+            }
+
+            // re-read program after potential token removal
+            if (tokens.isEmpty()) {
+                continue;
+            }
+            program = tokens.get(0);
+
             if (program.equals("echo")) {
-                if (tokens.size() == 1) {
-                    System.out.println();
-                } else {
-                    System.out.println(String.join(" ", tokens.subList(1, tokens.size())));
+                PrintStream originalOut = System.out;
+                PrintStream fileOut = null;
+                try {
+                    if (redirectOutFile != null) {
+                        fileOut = new PrintStream(new FileOutputStream(redirectOutFile, false));
+                        System.setOut(fileOut);
+                    }
+
+                    if (tokens.size() == 1) {
+                        System.out.println();
+                    } else {
+                        System.out.println(String.join(" ", tokens.subList(1, tokens.size())));
+                    }
+                } catch (IOException e) {
+                    // if redirection fails, behave like normal output
+                    originalOut.println("redirect: failed");
+                } finally {
+                    if (fileOut != null) fileOut.close();
+                    System.setOut(originalOut);
                 }
                 continue;
             }
             if (program.equals("type")) {
-                if (tokens.size() < 2) {
-                    System.out.println("type: not found");
-                    continue;
-                }
-                String target = tokens.get(1);
+                PrintStream originalOut = System.out;
+                PrintStream fileOut = null;
+                try {
+                    if (redirectOutFile != null) {
+                        fileOut = new PrintStream(new FileOutputStream(redirectOutFile, false));
+                        System.setOut(fileOut);
+                    }
 
-                // 1) Builtins
-                if (target.equals("echo") || target.equals("exit") || target.equals("type")) {
-                    System.out.println(target + " is a shell builtin");
-                    continue;
-                }
-
-                // 2) Search PATH for executables
-                boolean found = false;
-                String pathEnv = System.getenv("PATH");
-                if (pathEnv != null && !pathEnv.isBlank()) {
-                    String[] dirs = pathEnv.split(":");
-                    for (String dir : dirs) {
-                        if (dir == null || dir.isBlank()) continue;
-
-                        File candidate = new File(dir, target);
-                        if (candidate.exists() && candidate.isFile() && candidate.canExecute()) {
-                            System.out.println(target + " is " + candidate.getAbsolutePath());
-                            found = true;
+                    do {
+                        if (tokens.size() < 2) {
+                            System.out.println("type: not found");
                             break;
                         }
-                    }
-                }
+                        String target = tokens.get(1);
 
-                if (!found) {
-                    System.out.println(target + ": not found");
+                        // 1) Builtins
+                        if (target.equals("echo") || target.equals("exit") || target.equals("type")) {
+                            System.out.println(target + " is a shell builtin");
+                            break;
+                        }
+
+                        // 2) Search PATH for executables
+                        boolean found = false;
+                        String pathEnv2 = System.getenv("PATH");
+                        if (pathEnv2 != null && !pathEnv2.isBlank()) {
+                            String[] dirs = pathEnv2.split(":");
+                            for (String dir : dirs) {
+                                if (dir == null || dir.isBlank()) continue;
+
+                                File candidate = new File(dir, target);
+                                if (candidate.exists() && candidate.isFile() && candidate.canExecute()) {
+                                    System.out.println(target + " is " + candidate.getAbsolutePath());
+                                    found = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!found) {
+                            System.out.println(target + ": not found");
+                        }
+                    } while (false);
+                } catch (IOException e) {
+                    originalOut.println("redirect: failed");
+                } finally {
+                    if (fileOut != null) fileOut.close();
+                    System.setOut(originalOut);
                 }
                 continue;
             }
@@ -184,6 +238,11 @@ public class Main {
             ProcessBuilder pb = new ProcessBuilder(execCommand);
             pb.inheritIO();
             pb.directory(execDir);
+            if (redirectOutFile != null) {
+                pb.redirectOutput(new File(redirectOutFile));
+                pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+                pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
+            }
 
             try {
                 Process p = pb.start();
