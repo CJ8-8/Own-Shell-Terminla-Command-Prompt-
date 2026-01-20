@@ -324,9 +324,10 @@ public class Main {
                 String before = buf.toString();
                 String after = autocomplete(before);
                 if (!after.equals(before)) {
+                    String suffix = after.substring(before.length());
                     buf.setLength(0);
                     buf.append(after);
-                    System.out.print("\r\033[K" + prompt + after);
+                    System.out.print(suffix);
                     System.out.flush();
                 }
                 continue;
