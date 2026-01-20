@@ -1,10 +1,3 @@
-import org.jline.reader.LineReaderBuilder;
-import org.jline.reader.impl.DefaultParser;
-import org.jline.reader.impl.completer.StringsCompleter;
-import org.jline.terminal.TerminalBuilder;
-import org.jline.reader.EndOfFileException;
-import org.jline.reader.UserInterruptException;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -22,40 +15,80 @@ public class Main {
     private static Path pwd = Paths.get(System.getProperty("user.dir"));
 
     public static void main(String[] args) throws Exception {
-        var terminal = TerminalBuilder.builder().system(true).build();
+        final String prompt = "$ ";
+        StringBuilder buf = new StringBuilder();
 
-        var parser = new DefaultParser();
-        parser.setEscapeChars(new char[0]);
-        var stringsCompleter = new StringsCompleter("echo", "exit");
-        var lineReader =
-                LineReaderBuilder.builder()
-                        .terminal(terminal)
-                        .completer(stringsCompleter)
-                        .parser(parser)
-                        .build();
-
-        String prompt = "$ ";
+        System.out.print(prompt);
+        System.out.flush();
 
         while (true) {
-            String line;
-            try {
-                line = lineReader.readLine(prompt);
-            } catch (EndOfFileException e) {
-                break; // Ctrl+D
-            } catch (UserInterruptException e) {
-                continue; // Ctrl+C
-            }
-
-            if (line == null) {
+            int ch = System.in.read();
+            if (ch == -1) {
                 break;
             }
 
-            if (line.isBlank()) {
+            if (ch == '\r') {
                 continue;
             }
 
-            var command = parse(line);
-            run(command);
+            // TAB completion for builtins echo/exit
+            if (ch == '\t') {
+                String before = buf.toString();
+
+                // only complete the first word (no spaces yet)
+                boolean hasSpace = false;
+                for (int i = 0; i < before.length(); i++) {
+                    if (Character.isWhitespace(before.charAt(i))) {
+                        hasSpace = true;
+                        break;
+                    }
+                }
+
+                if (!hasSpace) {
+                    String after = before;
+                    if ("echo".startsWith(before)) {
+                        after = "echo ";
+                    } else if ("exit".startsWith(before)) {
+                        after = "exit ";
+                    }
+
+                    if (!after.equals(before)) {
+                        String suffix = after.substring(before.length());
+                        buf.setLength(0);
+                        buf.append(after);
+                        System.out.print(suffix);
+                        System.out.flush();
+                    }
+                }
+                continue;
+            }
+
+            // ENTER: run command
+            if (ch == '\n') {
+                System.out.print("\n");
+                System.out.flush();
+
+                String line = buf.toString();
+                buf.setLength(0);
+
+                if (line != null && !line.isBlank()) {
+                    try {
+                        var command = parse(line);
+                        run(command);
+                    } catch (IllegalArgumentException ignored) {
+                        // ignore invalid/empty commands
+                    }
+                }
+
+                System.out.print(prompt);
+                System.out.flush();
+                continue;
+            }
+
+            // normal character
+            buf.append((char) ch);
+            System.out.print((char) ch);
+            System.out.flush();
         }
     }
 
