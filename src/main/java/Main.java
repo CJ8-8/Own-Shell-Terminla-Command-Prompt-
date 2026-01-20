@@ -58,11 +58,11 @@ public class Main {
                 String before = buf.toString();
                 String completed = builtinCompletion(before);
                 if (completed != null && !completed.equals(before)) {
-                    // Rewrite the current line: prompt + completed builtin + space.
-                    System.out.print("\r" + prompt + completed);
+                    // Print only the suffix to avoid relying on terminal control sequences.
+                    String suffix = completed.substring(before.length());
+                    System.out.print(suffix);
                     System.out.flush();
-                    buf.setLength(0);
-                    buf.append(completed);
+                    buf.append(suffix);
                 }
                 continue;
             }
