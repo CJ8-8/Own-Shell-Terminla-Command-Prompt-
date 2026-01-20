@@ -160,9 +160,23 @@ public class Main {
                 continue;
             }
 
-            // Use resolvedPath as the program for execution, but keep argv[0] as the original command name
-            List<String> execCommand = new ArrayList<>(argsList);
-            execCommand.set(0, resolvedPath);
+            // Execute resolvedPath but force argv[0] to be the original program name
+            List<String> execCommand = new ArrayList<>();
+            execCommand.add("bash");
+            execCommand.add("-lc");
+
+            StringBuilder script = new StringBuilder();
+            script.append("exec -a ");
+            script.append("'").append(program.replace("'", "'\\''")).append("'");
+            script.append(" ");
+            script.append("'").append(resolvedPath.replace("'", "'\\''")).append("'");
+
+            for (int i = 1; i < argsList.size(); i++) {
+                script.append(" ");
+                script.append("'").append(argsList.get(i).replace("'", "'\\''")).append("'");
+            }
+
+            execCommand.add(script.toString());
 
             File execFile = new File(resolvedPath);
             File execDir = execFile.getParentFile();
