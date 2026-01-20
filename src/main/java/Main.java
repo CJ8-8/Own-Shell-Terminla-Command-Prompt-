@@ -160,13 +160,14 @@ public class Main {
                 continue;
             }
 
-            // Replace argv[0] with resolved absolute path
-            argsList.set(0, resolvedPath);
+            // Use resolvedPath as the program for execution, but keep argv[0] as the original command name
+            List<String> execCommand = new ArrayList<>(argsList);
+            execCommand.set(0, resolvedPath);
 
             File execFile = new File(resolvedPath);
             File execDir = execFile.getParentFile();
 
-            ProcessBuilder pb = new ProcessBuilder(argsList);
+            ProcessBuilder pb = new ProcessBuilder(execCommand);
             pb.inheritIO();
             pb.directory(execDir);
 
