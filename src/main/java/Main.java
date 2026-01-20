@@ -96,11 +96,13 @@ public class Main {
             }
             String program = tokens.get(0);
 
-            // Handle stdout redirection: > file  OR  1> file
+            // Handle stdout redirection: > file  OR  1> file  OR >> file OR 1>> file
             String redirectOutFile = null;
+            boolean redirectOutAppend = false;
             for (int i = 0; i < tokens.size(); i++) {
                 String t = tokens.get(i);
-                if (t.equals(">") || t.equals("1>")) {
+                if (t.equals(">") || t.equals("1>") || t.equals(">>") || t.equals("1>>")) {
+                    redirectOutAppend = t.equals(">>") || t.equals("1>>");
                     if (i + 1 < tokens.size()) {
                         redirectOutFile = tokens.get(i + 1);
                         // remove operator and filename
@@ -138,7 +140,7 @@ public class Main {
                 PrintStream fileErr = null;
                 try {
                     if (redirectOutFile != null) {
-                        fileOut = new PrintStream(new FileOutputStream(redirectOutFile, false));
+                        fileOut = new PrintStream(new FileOutputStream(redirectOutFile, redirectOutAppend));
                         System.setOut(fileOut);
                     }
                     if (redirectErrFile != null) {
@@ -168,7 +170,7 @@ public class Main {
                 PrintStream fileErr = null;
                 try {
                     if (redirectOutFile != null) {
-                        fileOut = new PrintStream(new FileOutputStream(redirectOutFile, false));
+                        fileOut = new PrintStream(new FileOutputStream(redirectOutFile, redirectOutAppend));
                         System.setOut(fileOut);
                     }
                     if (redirectErrFile != null) {
@@ -268,7 +270,11 @@ public class Main {
             pb.inheritIO();
             pb.directory(execDir);
             if (redirectOutFile != null) {
-                pb.redirectOutput(new File(redirectOutFile));
+                if (redirectOutAppend) {
+                    pb.redirectOutput(ProcessBuilder.Redirect.appendTo(new File(redirectOutFile)));
+                } else {
+                    pb.redirectOutput(new File(redirectOutFile));
+                }
             }
             if (redirectErrFile != null) {
                 pb.redirectError(new File(redirectErrFile));
