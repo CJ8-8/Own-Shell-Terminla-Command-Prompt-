@@ -24,6 +24,20 @@ public class Main {
                 continue;
             }
 
+            if (c == '\\' && inDoubleQuotes && !inSingleQuotes) {
+                if (i + 1 < input.length()) {
+                    char next = input.charAt(i + 1);
+                    if (next == '"' || next == '\\') {
+                        current.append(next);
+                        i++; // skip escaped char
+                        continue;
+                    }
+                }
+                // backslash is literal for other chars in double quotes
+                current.append('\\');
+                continue;
+            }
+
             if (c == '\'' && !inDoubleQuotes) {
                 inSingleQuotes = !inSingleQuotes;
                 continue; // don't include the quote char
