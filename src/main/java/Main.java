@@ -1,3 +1,7 @@
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.io.File;
 import java.util.Scanner;
 
@@ -69,8 +73,42 @@ public class Main {
             if (command.isEmpty()) {
                 continue;
             }
+            String[] tokens = command.split("\\s+");
+            String program = tokens[0];
+            List<String> argsList = new ArrayList<>(Arrays.asList(tokens));
 
-            System.out.println(command + ": command not found");
+            // Find executable in PATH
+            String pathEnv = System.getenv("PATH");
+            String resolvedPath = null;
+            if (pathEnv != null && !pathEnv.isBlank()) {
+                String[] dirs = pathEnv.split(":");
+                for (String dir : dirs) {
+                    if (dir == null || dir.isBlank()) continue;
+                    File candidate = new File(dir, program);
+                    if (candidate.exists() && candidate.isFile() && candidate.canExecute()) {
+                        resolvedPath = candidate.getAbsolutePath();
+                        break;
+                    }
+                }
+            }
+
+            if (resolvedPath == null) {
+                System.out.println(program + ": command not found");
+                continue;
+            }
+
+            // Replace argv[0] with resolved absolute path
+            argsList.set(0, resolvedPath);
+
+            ProcessBuilder pb = new ProcessBuilder(argsList);
+            pb.inheritIO();
+
+            try {
+                Process p = pb.start();
+                p.waitFor();
+            } catch (IOException | InterruptedException e) {
+                System.out.println(program + ": command not found");
+            }
         }
     }
 }
