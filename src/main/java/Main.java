@@ -29,6 +29,21 @@ public class Main {
                 System.out.println(command.substring(5));
                 continue;
             }
+            if (command.equals("type") || command.startsWith("type ")) {
+                String[] parts = command.split("\\s+", 2);
+                if (parts.length < 2 || parts[1].isBlank()) {
+                    System.out.println("type: not found");
+                    continue;
+                }
+
+                String target = parts[1].trim();
+                if (target.equals("echo") || target.equals("exit") || target.equals("type")) {
+                    System.out.println(target + " is a shell builtin");
+                } else {
+                    System.out.println(target + ": not found");
+                }
+                continue;
+            }
             if (command.isEmpty()) {
                 continue;
             }
