@@ -14,16 +14,6 @@ public class Main {
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
 
-            if (c == '\'' && !inDoubleQuotes) {
-                inSingleQuotes = !inSingleQuotes;
-                continue; // don't include the quote char
-            }
-
-            if (c == '"' && !inSingleQuotes) {
-                inDoubleQuotes = !inDoubleQuotes;
-                continue; // don't include the quote char
-            }
-
             if (c == '\\' && !inSingleQuotes && !inDoubleQuotes) {
                 if (i + 1 < input.length()) {
                     current.append(input.charAt(i + 1));
@@ -32,6 +22,16 @@ public class Main {
                     current.append('\\');
                 }
                 continue;
+            }
+
+            if (c == '\'' && !inDoubleQuotes) {
+                inSingleQuotes = !inSingleQuotes;
+                continue; // don't include the quote char
+            }
+
+            if (c == '"' && !inSingleQuotes) {
+                inDoubleQuotes = !inDoubleQuotes;
+                continue; // don't include the quote char
             }
 
             if (!inSingleQuotes && !inDoubleQuotes && Character.isWhitespace(c)) {
