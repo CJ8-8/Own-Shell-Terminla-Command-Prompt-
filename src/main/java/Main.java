@@ -111,6 +111,20 @@ public class Main {
                 }
             }
 
+            // Handle stderr redirection: 2> file
+            String redirectErrFile = null;
+            for (int i = 0; i < tokens.size(); i++) {
+                String t = tokens.get(i);
+                if (t.equals("2>")) {
+                    if (i + 1 < tokens.size()) {
+                        redirectErrFile = tokens.get(i + 1);
+                        tokens.remove(i + 1);
+                        tokens.remove(i);
+                    }
+                    break;
+                }
+            }
+
             // re-read program after potential token removal
             if (tokens.isEmpty()) {
                 continue;
@@ -119,11 +133,17 @@ public class Main {
 
             if (program.equals("echo")) {
                 PrintStream originalOut = System.out;
+                PrintStream originalErr = System.err;
                 PrintStream fileOut = null;
+                PrintStream fileErr = null;
                 try {
                     if (redirectOutFile != null) {
                         fileOut = new PrintStream(new FileOutputStream(redirectOutFile, false));
                         System.setOut(fileOut);
+                    }
+                    if (redirectErrFile != null) {
+                        fileErr = new PrintStream(new FileOutputStream(redirectErrFile, false));
+                        System.setErr(fileErr);
                     }
 
                     if (tokens.size() == 1) {
@@ -132,9 +152,10 @@ public class Main {
                         System.out.println(String.join(" ", tokens.subList(1, tokens.size())));
                     }
                 } catch (IOException e) {
-                    // if redirection fails, behave like normal output
-                    originalOut.println("redirect: failed");
+                    originalErr.println("redirect: failed");
                 } finally {
+                    if (fileErr != null) fileErr.close();
+                    System.setErr(originalErr);
                     if (fileOut != null) fileOut.close();
                     System.setOut(originalOut);
                 }
@@ -142,11 +163,17 @@ public class Main {
             }
             if (program.equals("type")) {
                 PrintStream originalOut = System.out;
+                PrintStream originalErr = System.err;
                 PrintStream fileOut = null;
+                PrintStream fileErr = null;
                 try {
                     if (redirectOutFile != null) {
                         fileOut = new PrintStream(new FileOutputStream(redirectOutFile, false));
                         System.setOut(fileOut);
+                    }
+                    if (redirectErrFile != null) {
+                        fileErr = new PrintStream(new FileOutputStream(redirectErrFile, false));
+                        System.setErr(fileErr);
                     }
 
                     do {
@@ -184,8 +211,10 @@ public class Main {
                         }
                     } while (false);
                 } catch (IOException e) {
-                    originalOut.println("redirect: failed");
+                    originalErr.println("redirect: failed");
                 } finally {
+                    if (fileErr != null) fileErr.close();
+                    System.setErr(originalErr);
                     if (fileOut != null) fileOut.close();
                     System.setOut(originalOut);
                 }
@@ -240,7 +269,11 @@ public class Main {
             pb.directory(execDir);
             if (redirectOutFile != null) {
                 pb.redirectOutput(new File(redirectOutFile));
-                pb.redirectError(ProcessBuilder.Redirect.INHERIT);
+            }
+            if (redirectErrFile != null) {
+                pb.redirectError(new File(redirectErrFile));
+            }
+            if (redirectOutFile != null || redirectErrFile != null) {
                 pb.redirectInput(ProcessBuilder.Redirect.INHERIT);
             }
 
