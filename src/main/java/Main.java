@@ -24,6 +24,16 @@ public class Main {
                 continue; // don't include the quote char
             }
 
+            if (c == '\\' && !inSingleQuotes && !inDoubleQuotes) {
+                if (i + 1 < input.length()) {
+                    current.append(input.charAt(i + 1));
+                    i++; // skip next character
+                } else {
+                    current.append('\\');
+                }
+                continue;
+            }
+
             if (!inSingleQuotes && !inDoubleQuotes && Character.isWhitespace(c)) {
                 if (current.length() > 0) {
                     tokens.add(current.toString());
