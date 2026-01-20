@@ -21,6 +21,14 @@ public class Main {
             if (command.equals("exit") || command.equals("exit 0")) {
                 System.exit(0);
             }
+            if (command.equals("echo")) {
+                System.out.println();
+                continue;
+            }
+            if (command.startsWith("echo ")) {
+                System.out.println(command.substring(5));
+                continue;
+            }
             if (command.isEmpty()) {
                 continue;
             }
