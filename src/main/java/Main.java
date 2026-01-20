@@ -18,6 +18,9 @@ public class Main {
             }
 
             command = command.trim();
+            if (command.equals("exit") || command.equals("exit 0")) {
+                System.exit(0);
+            }
             if (command.isEmpty()) {
                 continue;
             }
