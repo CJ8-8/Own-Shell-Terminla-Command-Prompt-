@@ -36,77 +36,85 @@ public class Main {
         return null;
     }
 
+    private static class RawMode implements AutoCloseable {
+        private final String original;
+
+        private RawMode(String original) {
+            this.original = original;
+        }
+
+        static RawMode enable() throws IOException, InterruptedException {
+            Process p = new ProcessBuilder("sh", "-lc", "stty -g < /dev/tty").redirectErrorStream(true).start();
+            String orig = new String(p.getInputStream().readAllBytes());
+            p.waitFor();
+
+            new ProcessBuilder("sh", "-lc", "stty raw -echo < /dev/tty").inheritIO().start().waitFor();
+            return new RawMode(orig.trim());
+        }
+
+        @Override
+        public void close() throws IOException, InterruptedException {
+            if (original != null && !original.isBlank()) {
+                new ProcessBuilder("sh", "-lc", "stty " + original + " < /dev/tty").inheritIO().start().waitFor();
+            }
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         final String prompt = "$ ";
         StringBuilder buf = new StringBuilder();
 
-        System.out.print(prompt);
-        System.out.flush();
+        try (RawMode ignored = RawMode.enable()) {
+            System.out.print(prompt);
+            System.out.flush();
 
-        while (true) {
-            int ch = System.in.read();
-            if (ch == -1) {
-                break;
-            }
-
-            if (ch == '\r') {
-                continue;
-            }
-
-            // TAB completion for builtins (echo/exit).
-            if (ch == '\t') {
-                String before = buf.toString();
-                String completed = builtinCompletion(before);
-                if (completed != null && !completed.equals(before)) {
-                    // Print only the suffix to avoid relying on terminal control sequences.
-                    String suffix = completed.substring(before.length());
-                    System.out.print(suffix);
-                    System.out.flush();
-                    buf.append(suffix);
+            while (true) {
+                int ch = System.in.read();
+                if (ch == -1) {
+                    break;
                 }
-                continue;
-            }
 
-            // Some environments expand TAB into spaces. If a space arrives right after a
-            // partial builtin, treat it like TAB completion and don't print the space.
-            if (ch == ' ') {
-                String before = buf.toString();
-                String completed = builtinCompletion(before);
-                if (completed != null && !completed.equals(before)) {
-                    String suffix = completed.substring(before.length());
-                    System.out.print(suffix);
-                    System.out.flush();
-                    buf.append(suffix);
+                // TAB completion for builtins (echo/exit).
+                if (ch == '\t') {
+                    String before = buf.toString();
+                    String completed = builtinCompletion(before);
+                    if (completed != null && !completed.equals(before)) {
+                        // Print only the suffix to avoid relying on terminal control sequences.
+                        String suffix = completed.substring(before.length());
+                        System.out.print(suffix);
+                        System.out.flush();
+                        buf.append(suffix);
+                    }
                     continue;
                 }
-            }
 
-            // ENTER: run command
-            if (ch == '\n') {
-                System.out.print("\n");
-                System.out.flush();
+                // ENTER: run command
+                if (ch == '\n' || ch == '\r') {
+                    System.out.print("\n");
+                    System.out.flush();
 
-                String line = buf.toString();
-                buf.setLength(0);
+                    String line = buf.toString();
+                    buf.setLength(0);
 
-                if (line != null && !line.isBlank()) {
-                    try {
-                        var command = parse(line);
-                        run(command);
-                    } catch (IllegalArgumentException ignored) {
-                        // ignore invalid/empty commands
+                    if (line != null && !line.isBlank()) {
+                        try {
+                            var command = parse(line);
+                            run(command);
+                        } catch (IllegalArgumentException ignored) {
+                            // ignore invalid/empty commands
+                        }
                     }
+
+                    System.out.print(prompt);
+                    System.out.flush();
+                    continue;
                 }
 
-                System.out.print(prompt);
+                // Normal character: append to buffer and echo it.
+                buf.append((char) ch);
+                System.out.print((char) ch);
                 System.out.flush();
-                continue;
             }
-
-            // Normal character: append to buffer and echo it.
-            buf.append((char) ch);
-            System.out.print((char) ch);
-            System.out.flush();
         }
     }
 
