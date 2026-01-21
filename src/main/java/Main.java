@@ -64,7 +64,7 @@ public class Main {
         final String prompt = "$ ";
         StringBuilder buf = new StringBuilder();
 
-        try (RawMode ignored = RawMode.enable()) {
+        try (RawMode raw = RawMode.enable()) {
             System.out.print(prompt);
             System.out.flush();
 
