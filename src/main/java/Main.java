@@ -64,7 +64,8 @@ public class Main {
         final String prompt = "$ ";
         StringBuilder buf = new StringBuilder();
 
-        try (RawMode raw = RawMode.enable()) {
+        RawMode raw = RawMode.enable();
+        try {
             System.out.print(prompt);
             System.out.flush();
 
@@ -96,6 +97,9 @@ public class Main {
                     String line = buf.toString();
                     buf.setLength(0);
 
+                    // Disable raw mode while executing the command so external programs output normally.
+                    raw.close();
+
                     if (line != null && !line.isBlank()) {
                         try {
                             var command = parse(line);
@@ -104,6 +108,9 @@ public class Main {
                             // ignore invalid/empty commands
                         }
                     }
+
+                    // Re-enable raw mode for next prompt/input.
+                    raw = RawMode.enable();
 
                     System.out.print(prompt);
                     System.out.flush();
@@ -114,6 +121,10 @@ public class Main {
                 buf.append((char) ch);
                 System.out.print((char) ch);
                 System.out.flush();
+            }
+        } finally {
+            if (raw != null) {
+                raw.close();
             }
         }
     }
